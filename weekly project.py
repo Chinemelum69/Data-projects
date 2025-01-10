@@ -1,0 +1,351 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+#import our libraries
+import pandas as pd
+import numpy as np
+from sklearn import linear_model
+
+
+# In[38]:
+
+
+#import the csv files using pandas
+data = pd.read_csv("C:\\Users\\MAC\\Downloads\\HR DATA 2(in).csv")
+data
+
+
+# In[ ]:
+
+
+#UNDERSTANDING THE DATASET
+
+
+# In[4]:
+
+
+#the shape of the dataset
+data.shape
+#13 columns and 23490 rows
+
+
+# In[5]:
+
+
+data.head()
+
+
+# In[6]:
+
+
+data.tail()
+
+
+# In[7]:
+
+
+#descritive statistics for numerical columns
+data.describe()
+
+
+# In[ ]:
+
+
+#OBSERVATIONS :1 average [age of employees(34),previous_year_rating(3.3),length of service(5.8years),KPIs(0.3),training_score(63)
+#             :2 minimum[age of employees(20),length of service(1)
+#             :3 maximum[age of employees(60),previous_year_rating(5),length of service(34years),KPIs(1),training_score(99)  
+
+
+# In[ ]:
+
+
+#descritive statistics for categorical columns
+
+
+# In[8]:
+
+
+data.describe(include = 'object')
+
+
+# In[ ]:
+
+
+#OBSERVATION  :1 unique[9 unique departments,34 unique regions,3 education standards,2 gender,3 recruiment channel]
+#             :2 top[sales & marketing as the top department,region_2,most employee has bachelors degree,more males,top recruiment channel(other)
+
+
+# In[9]:
+
+
+#datatype of the dataset
+data.dtypes
+
+
+# In[11]:
+
+
+data.nunique()
+
+
+# In[ ]:
+
+
+#CLEANING THE DATASET
+
+
+# In[12]:
+
+
+#removing null values
+data.isnull().sum()
+
+
+# In[18]:
+
+
+#checking for the cause of the missing value(checking for pattern|relationship)
+data[data['previous_year_rating'].isnull()]
+
+
+# In[ ]:
+
+
+#OBSERVATIONS : all the rows with missing values in column(previous_year_ratings) have a length of service =1
+#this means that employees with 1 year of service has missing values for previous_year_rating because they were
+#not in the company the previous year;hence replaced with 0
+
+
+# In[39]:
+
+
+#filing the missing values in previous year rating
+data['previous_year_rating']=data['previous_year_rating'].fillna(0)
+data['previous_year_rating']
+
+
+# In[40]:
+
+
+#checking for pattern in education column
+data[data['education'].isnull()]
+
+
+# In[44]:
+
+
+#hence no pattern was found in education column and since it is a categorical variable we will be replacing all null values with the mode
+data['education'].fillna(data['education'].mode()[0],inplace=True)
+data['education']
+
+
+# In[42]:
+
+
+#check if the null values are still present
+data.isnull().sum()
+
+
+# In[43]:
+
+
+#checking for outliers(numerical variables)
+import plotly.express as px
+fig = px.scatter(x=data['age'],y=data['avg_training_score'])
+fig.show()
+
+
+# In[ ]:
+
+
+#OBSERVATION : from age 25 to 53 tends to make an average training score of 94 and above;hence age is a determinant factor 
+
+
+# In[48]:
+
+
+fig = px.scatter(x=data['previous_year_rating'],y=data['length_of_service'])
+fig.show()
+
+
+# In[ ]:
+
+
+#OBSERVATIONS : employees with 3-5 previous year rating tend to stay longer in the firm 
+
+
+# In[51]:
+
+
+fig = px.scatter(x=data['no_of_trainings'],y=data['avg_training_score'])
+fig.show()
+
+
+# In[ ]:
+
+
+#OBSERVATIONS : employees with less number of trainings get high average training score
+
+
+# In[54]:
+
+
+#QUESTIONS
+#relationship between age and awards_won
+fig = px.scatter(x=data['age'],y=data['awards_won?'])
+fig.show()
+
+
+# In[ ]:
+
+
+#Answer : awards are evenly distributed regardless the age : fair system
+
+
+# In[61]:
+
+
+#is there a relationship between the number of trainings and KPIs met(>80%)
+fig = px.scatter(x=data['no_of_trainings'],y=data['KPIs_met >80%'])
+fig.show()
+
+
+# In[12]:
+
+
+#how does the average training score vary across departments?
+import matplotlib.pyplot as plt
+plt.bar(data['department'],data['avg_training_score'],width=0.1)
+plt.xlabel('department')
+plt.ylabel('avg_training_score')
+plt.show()
+
+
+# In[ ]:
+
+
+#ANSWER : no obvious difference except that the legal department has the lowest average score
+
+
+# In[ ]:
+
+
+#what is the gender distribution across departments and regions
+
+
+# In[ ]:
+
+
+fig = plt.subplots(figsize=(15, 10))
+bar1 =np.arrange(len)
+
+
+# In[ ]:
+
+
+#how does education vary by department or recruitment channel
+
+
+# In[44]:
+
+
+plt = data.groupby(['education','department'])['education'].count().unstack(0).plot.bar(figsize =(10,6))
+plt = data.groupby(['recruitment_channel','department'])['recruitment_channel'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[20]:
+
+
+data.columns
+
+
+# In[4]:
+
+
+#what variables determine whether an award is won or not
+#first converting column(awards won?) column to yes or no
+data['awards_won?'].replace((1,0),('yes','no'), inplace=True)
+plt = data.groupby(['education','awards_won?'])['education'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[ ]:
+
+
+#OBSERVATION: education is a determinant because below secondary tends to win less awards,bachelors win more awards
+
+
+# In[7]:
+
+
+data['awards_won?'].replace((1,0),('yes','no'), inplace=True)
+plt = data.groupby(['KPIs_met >80%','awards_won?'])['KPIs_met >80%'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[ ]:
+
+
+#employees with KPIs>80% tends to win more awards
+
+
+# In[9]:
+
+
+data['awards_won?'].replace((0,1),('no','yes'), inplace=True)
+plt = data.groupby(['previous_year_rating','awards_won?'])['previous_year_rating'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[ ]:
+
+
+#employees with 3-5 previous year rating tends to win more awards
+
+
+# In[10]:
+
+
+data['awards_won?'].replace((1,0),('yes','no'), inplace=True)
+plt = data.groupby(['region','awards_won?'])['region'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[ ]:
+
+
+#eemployees from region 2 tends to win more awards
+
+
+# In[16]:
+
+
+data['awards_won?'].replace((1,0),('yes','no'), inplace=True)
+plt = data.groupby(['department','awards_won?'])['department'].count().unstack(0).plot.bar(figsize =(10,6))
+
+
+# In[ ]:
+
+
+#sales and marketing department tends to win more awards
+
+
+# In[ ]:
+
+
+#What is the best criteria for employing award winning employees
+the best method for employing award winning employees is to employ more workers with bachelors degree 
+and above through other recruitment channel within region 2 who met KPIs of 80% and above 
+
+
+# In[ ]:
+
+
+#which recruitment channel yields the highest performing employees
+other
+
+
+# In[ ]:
+
+
+
+
